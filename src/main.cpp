@@ -9,6 +9,10 @@
 #include "mqtt_esp.h"
 #include "config.h"
 
+QueueHandle_t temperature;
+QueueHandle_t humidity;
+QueueHandle_t hygrometer;
+
 #define DHTPIN 16
 #define HYGPIN 32
 
@@ -28,14 +32,14 @@ void read_DHT11(void * pvParameters) {
         if (isnan(t)) {
             Serial.println("Failed to read temperature from DHT sensor!");
         } else {
-            Serial.printf("Temperatura: %.1f°C\n", t);
+            xQueueSend(temperature, &t, pdMS_TO_TICKS(0));
         }
 
         h = dht.readHumidity();
         if (isnan(h)) {
             Serial.println("Failed to read humidity from DHT sensor!");
         } else {
-            Serial.printf("Umidade: %.1f%\n", h);
+            xQueueSend(humidity, &h, pdMS_TO_TICKS(0));
         }
 
         vTaskDelayUntil(&xLastWakeTime, 1000/portTICK_PERIOD_MS );
@@ -49,7 +53,7 @@ void read_hygrometer(void * pvParameters) {
 
     for(;;) {
         h = analogRead(HYGPIN);
-        Serial.printf("Higrometro: %d\n", h);
+        xQueueSend(hygrometer, &h, pdMS_TO_TICKS(0));
 
         vTaskDelayUntil(&xLastWakeTime, 1000/portTICK_PERIOD_MS );
     }
@@ -62,6 +66,10 @@ void setup() {
 
     set_parameters_wifi(WIFI_SSID, WIFI_PASSWORD);
     set_parameters_mqtt(MQTT_SERVER, MQTT_PORT, MQTT_USER, MQTT_PASSWORD);
+
+    temperature = xQueueCreate(10, sizeof(float));
+    humidity = xQueueCreate(10, sizeof(float));
+    hygrometer = xQueueCreate(10, sizeof(uint16_t));
 
     xTaskCreate(wifi_loop, "wifi_manager", 16384, NULL, 1, NULL);
     delay(1000);

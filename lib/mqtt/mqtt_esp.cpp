@@ -4,12 +4,9 @@
 
 #include <PubSubClient.h>
 
-extern QueueHandle_t lux;
 extern QueueHandle_t temperature;
-extern QueueHandle_t pressure;
-extern QueueHandle_t wind_speed;
 extern QueueHandle_t humidity;
-extern QueueHandle_t angle;
+extern QueueHandle_t hygrometer;
 
 extern WiFiClient wifi_esp;
 PubSubClient client_mqtt(wifi_esp);
@@ -60,7 +57,24 @@ void set_parameters_mqtt(const char* server, int port, const char* user, const c
 }
 
 void send_messages_to_broker() {
-    return;
+    float read_value;
+    uint16_t read_value_int;
+    char message[10];
+
+    if (xQueueReceive(temperature, &read_value, pdMS_TO_TICKS(0)) == true) {
+        sprintf(message, "%d", (uint32_t)read_value);
+        send_mqtt_message("greenhouse/temperature", message);
+    }
+
+    if (xQueueReceive(humidity, &read_value, pdMS_TO_TICKS(0)) == true) {
+        sprintf(message, "%.1f", read_value);
+        send_mqtt_message("greenhouse/humidity", message);
+    }
+
+    if (xQueueReceive(hygrometer, &read_value_int, pdMS_TO_TICKS(0)) == true) {
+        sprintf(message, "%d", read_value_int);
+        send_mqtt_message("greenhouse/hygrometer", message);
+    }
 }
 
 void mqtt_loop(void *pvParameters) {
