@@ -2,6 +2,8 @@
 #include "wifi_esp.h"
 #include "config.h"
 
+#include <ESP32Servo.h>
+
 #include <PubSubClient.h>
 
 extern QueueHandle_t temperature;
@@ -16,16 +18,55 @@ int mqtt_port = 1883;
 char mqtt_user[50];
 char mqtt_password[50];
 
-void connect_broker() {
-    client_mqtt.setServer(mqtt_server, mqtt_port);
+#define REDPIN 27
+#define GRENPIN 14
+#define BLUEPIN 26
+#define COOLERPIN 13
+#define HUMIDIFIERPIN 12
+#define SERVOPIN 23
 
+Servo servoMotor;
+
+void callback(char* topic, byte* message, unsigned int length) {
+    message[length] = '\0';
+
+    if (String(topic) == "greenhouse/lighting") {
+        Serial.print("Iluminação = ");
+        Serial.println(atoi((char *)message));
+        analogWrite(REDPIN, atoi((char *)message));
+        analogWrite(GRENPIN, (atoi((char *)message) * .1));
+        analogWrite(BLUEPIN, atoi((char *)message));
+    }
+    if (String(topic) == "greenhouse/cooler") {
+        Serial.print("Cooler = ");
+        Serial.println(atoi((char *)message));
+        analogWrite(COOLERPIN, atoi((char *)message));
+    }
+    if (String(topic) == "greenhouse/nebulizer") {
+        Serial.print("Nebulizador = ");
+        Serial.println(atoi((char *)message));
+        analogWrite(HUMIDIFIERPIN, atoi((char *)message));
+    }
+    if (String(topic) == "greenhouse/ventilation") {
+        Serial.print("Servo = ");
+        Serial.println(atoi((char *)message));
+        servoMotor.write(atoi((char *)message));
+    }
+}
+
+void connect_broker() {
     while (!client_mqtt.connected()) {
         Serial.print("Attempting MQTT connection to ");
         Serial.println(mqtt_server);
         if (client_mqtt.connect("Estufa")) {
             Serial.println("connected");
-            vTaskDelay(1000/portTICK_PERIOD_MS);
 
+            client_mqtt.subscribe("greenhouse/lighting");
+            client_mqtt.subscribe("greenhouse/cooler");
+            client_mqtt.subscribe("greenhouse/nebulizer");
+            client_mqtt.subscribe("greenhouse/ventilation");
+
+            vTaskDelay(1000/portTICK_PERIOD_MS);
         } else {
             Serial.print("failed, rc=");
             Serial.print(client_mqtt.state());
@@ -78,6 +119,12 @@ void send_messages_to_broker() {
 }
 
 void mqtt_loop(void *pvParameters) {
+    servoMotor.setPeriodHertz(50); 
+    servoMotor.attach(SERVOPIN, 600, 2400);
+
+    client_mqtt.setServer(mqtt_server, mqtt_port);
+    client_mqtt.setCallback(callback);
+
     TickType_t xLastWakeTime = xTaskGetTickCount();
 
     for(;;) {
