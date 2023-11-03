@@ -31,25 +31,21 @@ void callback(char* topic, byte* message, unsigned int length) {
     message[length] = '\0';
 
     if (String(topic) == "greenhouse/lighting") {
-        Serial.print("Iluminação = ");
-        Serial.println(atoi((char *)message));
+        Serial.printf("Iluminação = %d\n", atoi((char *)message));
         analogWrite(REDPIN, atoi((char *)message));
         analogWrite(GRENPIN, (atoi((char *)message) * .1));
         analogWrite(BLUEPIN, atoi((char *)message));
     }
     if (String(topic) == "greenhouse/cooler") {
-        Serial.print("Cooler = ");
-        Serial.println(atoi((char *)message));
+        Serial.printf("Cooler = %d\n", atoi((char *)message));
         analogWrite(COOLERPIN, atoi((char *)message));
     }
     if (String(topic) == "greenhouse/nebulizer") {
-        Serial.print("Nebulizador = ");
-        Serial.println(atoi((char *)message));
+        Serial.printf("Nebulizador = %d\n", atoi((char *)message));
         analogWrite(HUMIDIFIERPIN, atoi((char *)message));
     }
     if (String(topic) == "greenhouse/ventilation") {
-        Serial.print("Servo = ");
-        Serial.println(atoi((char *)message));
+        Serial.printf("Servo = %d\n", atoi((char *)message));
         servoMotor.write(atoi((char *)message));
     }
 }
@@ -81,12 +77,7 @@ boolean client_mqtt_is_connected(){
 }
 
 void send_mqtt_message(const char* topic, const char* msg) {
-    Serial.print("[");
-    Serial.print(millis());
-    Serial.print("] send: ");
-    Serial.print(msg);
-    Serial.print(" to ");
-    Serial.println(topic);
+    Serial.printf("[%ld] send: %s to %s\n", millis(), msg, topic);
     client_mqtt.publish(topic, msg);
 }
 
@@ -103,12 +94,12 @@ void send_messages_to_broker() {
     char message[10];
 
     if (xQueueReceive(temperature, &read_value, pdMS_TO_TICKS(0)) == true) {
-        sprintf(message, "%d", (uint32_t)read_value);
+        sprintf(message, "%.1f", read_value);
         send_mqtt_message("greenhouse/temperature", message);
     }
 
     if (xQueueReceive(humidity, &read_value, pdMS_TO_TICKS(0)) == true) {
-        sprintf(message, "%.1f", read_value);
+        sprintf(message, "%d", (uint32_t)read_value);
         send_mqtt_message("greenhouse/humidity", message);
     }
 
