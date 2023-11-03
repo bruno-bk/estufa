@@ -29,10 +29,12 @@ void set_parameters_wifi(const char* wifi_ssid, const char* wifi_password) {
 }
 
 void wifi_loop( void * pvParameters ) {
+    TickType_t xLastWakeTime = xTaskGetTickCount();
+
     for(;;) {
         if (WiFi.status() != WL_CONNECTED){
             connect_wifi();
         }
-        vTaskDelay(5000/portTICK_PERIOD_MS);
+        vTaskDelayUntil(&xLastWakeTime, 5000/portTICK_PERIOD_MS );
     }
 }
