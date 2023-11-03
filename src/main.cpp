@@ -10,6 +10,7 @@
 #include "config.h"
 
 #define DHTPIN 16
+#define HYGPIN 32
 
 DHT dht(DHTPIN, DHT11);
 
@@ -41,8 +42,23 @@ void read_DHT11(void * pvParameters) {
     }
 }
 
+void read_hygrometer(void * pvParameters) {
+    uint16_t h;
+
+    TickType_t xLastWakeTime = xTaskGetTickCount();
+
+    for(;;) {
+        h = analogRead(HYGPIN);
+        Serial.printf("Higrometro: %d\n", h);
+
+        vTaskDelayUntil(&xLastWakeTime, 1000/portTICK_PERIOD_MS );
+    }
+}
+
 void setup() {
     Serial.begin(115200);
+
+    pinMode(HYGPIN, INPUT);
 
     set_parameters_wifi(WIFI_SSID, WIFI_PASSWORD);
     set_parameters_mqtt(MQTT_SERVER, MQTT_PORT, MQTT_USER, MQTT_PASSWORD);
@@ -52,8 +68,10 @@ void setup() {
     xTaskCreate(mqtt_loop, "mqtt_manager", 16384, NULL, 1, NULL);
     delay(500);
     xTaskCreate(read_DHT11, "DHT11", 16384, NULL, 1, NULL);
+    delay(500);
+    xTaskCreate(read_hygrometer, "hygrometer", 16384, NULL, 1, NULL);
 }
 
 void loop() {
-    
+
 }
