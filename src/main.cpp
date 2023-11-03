@@ -1,18 +1,16 @@
 #include <Arduino.h>
 
-// put function declarations here:
-int myFunction(int, int);
+#include "wifi_esp.h"
+#include "config.h"
 
 void setup() {
-  // put your setup code here, to run once:
-  int result = myFunction(2, 3);
+    Serial.begin(115200);
+
+    set_parameters_wifi(WIFI_SSID, WIFI_PASSWORD);
+
+    xTaskCreate(wifi_loop, "wifi_manager", 16384, NULL, 1, NULL);
 }
 
 void loop() {
-  // put your main code here, to run repeatedly:
-}
-
-// put function definitions here:
-int myFunction(int x, int y) {
-  return x + y;
+    
 }
