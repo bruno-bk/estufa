@@ -21,8 +21,8 @@ char mqtt_password[50];
 #define REDPIN 27
 #define GRENPIN 14
 #define BLUEPIN 26
-#define COOLERPIN 13
-#define HUMIDIFIERPIN 12
+#define COOLERPIN 12
+#define HUMIDIFIERPIN 13
 #define SERVOPIN 23
 
 Servo servoMotor;
