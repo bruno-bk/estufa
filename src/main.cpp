@@ -20,7 +20,9 @@ DHT dht(DHTPIN, DHT11);
 
 void read_DHT11(void * pvParameters) {
     float t;
+    float last_t = 0;
     float h;
+    float last_h = 0;
 
     dht.begin();
     vTaskDelay(1000/portTICK_PERIOD_MS );
@@ -31,14 +33,16 @@ void read_DHT11(void * pvParameters) {
         t = dht.readTemperature();
         if (isnan(t)) {
             Serial.println("Failed to read temperature from DHT sensor!");
-        } else {
+        } else if (abs(t - last_t) >= 0.1) {
+            last_t = t;
             xQueueSend(temperature, &t, pdMS_TO_TICKS(0));
         }
 
         h = dht.readHumidity();
         if (isnan(h)) {
             Serial.println("Failed to read humidity from DHT sensor!");
-        } else {
+        } else if (abs(h - last_h) >= 1) {
+            last_h = h;
             xQueueSend(humidity, &h, pdMS_TO_TICKS(0));
         }
 
@@ -48,12 +52,17 @@ void read_DHT11(void * pvParameters) {
 
 void read_hygrometer(void * pvParameters) {
     uint16_t h;
+    uint16_t last_h;
 
     TickType_t xLastWakeTime = xTaskGetTickCount();
 
     for(;;) {
         h = analogRead(HYGPIN);
-        xQueueSend(hygrometer, &h, pdMS_TO_TICKS(0));
+
+        if (abs(h - last_h) >= 50) {
+            last_h = h;
+            xQueueSend(hygrometer, &h, pdMS_TO_TICKS(0));
+        }
 
         vTaskDelayUntil(&xLastWakeTime, 1000/portTICK_PERIOD_MS );
     }
