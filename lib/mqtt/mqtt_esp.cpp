@@ -32,21 +32,21 @@ void callback(char* topic, byte* message, unsigned int length) {
 
     if (String(topic) == "greenhouse/lighting") {
         Serial.printf("Iluminação = %d\n", atoi((char *)message));
-        analogWrite(REDPIN, atoi((char *)message));
-        analogWrite(GRENPIN, (atoi((char *)message) * .1));
-        analogWrite(BLUEPIN, atoi((char *)message));
+        analogWrite(REDPIN, atoi((char *)message) * 2.55);
+        analogWrite(GRENPIN, (atoi((char *)message) * 0.255));
+        analogWrite(BLUEPIN, atoi((char *)message) * 2.55);
     }
     if (String(topic) == "greenhouse/cooler") {
         Serial.printf("Cooler = %d\n", atoi((char *)message));
-        analogWrite(COOLERPIN, atoi((char *)message));
+        analogWrite(COOLERPIN, atoi((char *)message) * 2.55);
     }
     if (String(topic) == "greenhouse/nebulizer") {
         Serial.printf("Nebulizador = %d\n", atoi((char *)message));
-        analogWrite(HUMIDIFIERPIN, atoi((char *)message));
+        analogWrite(HUMIDIFIERPIN, atoi((char *)message) * 2.55);
     }
     if (String(topic) == "greenhouse/ventilation") {
         Serial.printf("Servo = %d\n", atoi((char *)message));
-        servoMotor.write(atoi((char *)message));
+        servoMotor.write(140 - (atoi((char *)message) * 1.4 ));
     }
 }
 
