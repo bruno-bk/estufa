@@ -24,8 +24,20 @@ void read_DHT11(void * pvParameters) {
     float h;
     float last_h = 0;
 
+    const uint8_t SAMPLING_AMOUNT = 20;
+    float moving_average[SAMPLING_AMOUNT];
+    uint8_t index = 0;
+    float sum_t = 0;
+
     dht.begin();
-    vTaskDelay(1000/portTICK_PERIOD_MS );
+    while (isnan(dht.readTemperature())){
+        vTaskDelay(1000/portTICK_PERIOD_MS );
+    }
+    for (index = 0; index < SAMPLING_AMOUNT; index++){
+        moving_average[index] = dht.readTemperature();
+        sum_t += moving_average[index];
+    }
+    index = 0;
 
     TickType_t xLastWakeTime = xTaskGetTickCount();
 
@@ -33,9 +45,22 @@ void read_DHT11(void * pvParameters) {
         t = dht.readTemperature();
         if (isnan(t)) {
             Serial.println("Failed to read temperature from DHT sensor!");
-        } else if (abs(t - last_t) >= 0.1) {
-            last_t = t;
-            xQueueSend(temperature, &t, pdMS_TO_TICKS(0));
+        } else {
+            sum_t -= moving_average[index];
+            moving_average[index] = t;
+            sum_t += moving_average[index];
+
+            index++;
+            if(index == SAMPLING_AMOUNT){
+                index = 0;
+            }
+
+            t = sum_t/SAMPLING_AMOUNT;
+            
+            if (abs(t - last_t) >= 0.1) {
+                last_t = t;
+                xQueueSend(temperature, &t, pdMS_TO_TICKS(0));
+            }
         }
 
         h = dht.readHumidity();
