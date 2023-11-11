@@ -24,6 +24,7 @@ char mqtt_password[50];
 #define COOLERPIN 12
 #define HUMIDIFIERPIN 13
 #define SERVOPIN 23
+#define PUMPPIN 5
 
 Servo servoMotor;
 
@@ -48,6 +49,14 @@ void callback(char* topic, byte* message, unsigned int length) {
         Serial.printf("Servo = %d\n", atoi((char *)message));
         servoMotor.write(140 - (atoi((char *)message) * 1.4 ));
     }
+    if (String(topic) == "greenhouse/irrigation") {
+        Serial.printf("Bomba de agua = %s\n", message);
+        if (strcmp((const char*)message, "true") == 0){
+            digitalWrite(PUMPPIN, HIGH);
+        } else {
+            digitalWrite(PUMPPIN, LOW);
+        }
+    }
 }
 
 void connect_broker() {
@@ -61,6 +70,7 @@ void connect_broker() {
             client_mqtt.subscribe("greenhouse/cooler");
             client_mqtt.subscribe("greenhouse/nebulizer");
             client_mqtt.subscribe("greenhouse/ventilation");
+            client_mqtt.subscribe("greenhouse/irrigation");
 
             vTaskDelay(1000/portTICK_PERIOD_MS);
         } else {
@@ -117,6 +127,12 @@ void mqtt_loop(void *pvParameters) {
     client_mqtt.setCallback(callback);
 
     TickType_t xLastWakeTime = xTaskGetTickCount();
+
+    pinMode(REDPIN, OUTPUT);
+    pinMode(GRENPIN, OUTPUT);
+    pinMode(BLUEPIN, OUTPUT);
+    pinMode(COOLERPIN, OUTPUT);
+    pinMode(PUMPPIN, OUTPUT);
 
     for(;;) {
         if (client_mqtt.connected()) {
